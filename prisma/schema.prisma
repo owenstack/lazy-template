@@ -1,0 +1,82 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  userId       String         @id @unique
+  events       Event[]
+  notification Notification[]
+  follows      Follow[]       @relation("UserToFollow")
+  Ticket       Ticket[]
+}
+
+model Event {
+  id                    String   @id @default(cuid())
+  title                 String
+  description           String?
+  createdAt             DateTime
+  startDate             DateTime
+  endDate               DateTime
+  location              String
+  organizer             User     @relation(fields: [organizerId], references: [userId])
+  organizerId           String
+  imagesUrl             String[]
+  likes                 Int      @default(0)
+  capacity              Int
+  currentAttendees      Int      @default(0)
+  qrCode                String   @unique
+  registrationStartDate DateTime
+  registrationEndDate   DateTime
+  ticket                Ticket[]
+  follows               Follow[] @relation("EventToFollow")
+}
+
+model Ticket {
+  id                  String       @id @default(cuid())
+  userId              String?
+  user                User?        @relation(fields: [userId], references: [userId])
+  eventId             String
+  event               Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  price               Float
+  status              TicketStatus @default(AVAILABLE)
+  availability        Int
+  availabilityEndDate DateTime
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  title       String
+  message     String
+  redirectUrl String
+  follow      Follow[]
+  User        User?    @relation(fields: [userUserId], references: [userId])
+  userUserId  String?
+}
+
+model Follow {
+  id             String        @id @default(cuid())
+  dateCreated    DateTime
+  dateUpdated    DateTime
+  user           User          @relation("UserToFollow", fields: [userId], references: [userId])
+  userId         String
+  event          Event         @relation("EventToFollow", fields: [eventId], references: [id])
+  eventId        String
+  Notification   Notification? @relation(fields: [notificationId], references: [id])
+  notificationId String?
+}
+
+enum TicketStatus {
+  AVAILABLE
+  PURCHASED
+}
